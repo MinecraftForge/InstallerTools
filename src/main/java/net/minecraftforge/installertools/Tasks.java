@@ -21,16 +21,17 @@ package net.minecraftforge.installertools;
 import java.util.function.Supplier;
 
 public enum Tasks {
-    MCP_DATA(McpData::new);
+    MCP_DATA(McpData::new),
+    CREATE_DIR(CreateDirectory::new);
 
-    private Supplier<? extends ITask> supplier;
+    private Supplier<? extends Task> supplier;
 
-    private Tasks(Supplier<? extends ITask> supplier) {
+    private Tasks(Supplier<? extends Task> supplier) {
         this.supplier = supplier;
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends ITask> T get() {
+    public <T extends Task> T get() {
         return (T)supplier.get();
     }
 }

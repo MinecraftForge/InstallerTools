@@ -37,14 +37,13 @@ import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 
-public class McpData implements ITask {
+public class McpData extends Task {
 
     @SuppressWarnings("unchecked")
     @Override
     public void process(String[] args) throws IOException {
 
         OptionParser parser = new OptionParser();
-        // Shared arguments
         OptionSpec<File> inputO = parser.accepts("input").withRequiredArg().ofType(File.class).required();
         OptionSpec<File> outputO = parser.accepts("output").withRequiredArg().ofType(File.class).required();
         OptionSpec<String> keyO = parser.accepts("key").withRequiredArg().ofType(String.class).required();
@@ -152,16 +151,6 @@ public class McpData implements ITask {
         int n;
         while ((n = source.read(buf)) > 0)
             sink.write(buf, 0, n);
-    }
-
-
-    public static void error(String message) {
-        log(message);
-        throw new RuntimeException(message);
-    }
-
-    public static void log(String message) {
-        System.out.println(message);
     }
 
     public static class McpConfig {

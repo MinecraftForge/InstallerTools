@@ -20,6 +20,15 @@ package net.minecraftforge.installertools;
 
 import java.io.IOException;
 
-public interface ITask {
-    void process(String[] args) throws IOException;
+public abstract class Task {
+    public abstract void process(String[] args) throws IOException;
+
+    protected void error(String message) {
+        log(message);
+        throw new RuntimeException(message);
+    }
+
+    protected void log(String message) {
+        System.out.println(message);
+    }
 }

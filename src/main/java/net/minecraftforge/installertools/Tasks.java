@@ -22,7 +22,8 @@ import java.util.function.Supplier;
 
 public enum Tasks {
     MCP_DATA(McpData::new),
-    CREATE_DIR(CreateDirectory::new);
+    CREATE_DIR(CreateDirectory::new),
+    CREATE_PARENTS(CreateParents::new);
 
     private Supplier<? extends Task> supplier;
 

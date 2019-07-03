@@ -119,6 +119,7 @@ public class DeobfRealms extends Task {
                 JointProvider inheritanceProviders = new JointProvider();
                 inheritanceProviders.add(new JarProvider(vanillaJar));
                 inheritanceProviders.add(new JarProvider(mcSSJar));
+                mapping.setFallbackInheritanceProvider(inheritanceProviders);
 
                 JarRemapper remapper = new JarRemapper(mapping);
                 try {

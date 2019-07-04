@@ -54,6 +54,11 @@ public class DeobfRealms extends Task {
             File map = options.valueOf(mapO);
             String mcp = options.valueOf(mcpO);
             File mcJar = options.valueOf(mcJarO);
+            //TODO: Think about sided processors next time a breaking change is needed anyway
+            if(mcJar.getName().contains("server")){
+                log("Detected server jar, skipping client-only DEOBF_REALMS processor");
+                return;
+            }
             File json = options.has(jsonO) ? options.valueOf(jsonO) : new File(mcJar.getAbsolutePath().substring(0, mcJar.getAbsolutePath().length() - 4) + ".json"); // .jar -> .json As long as the launcher doesn't change this structure we're fine.
             File libs = options.has(libsO) ? options.valueOf(libsO) : new File(mcJar.getParentFile().getParentFile().getParentFile(), "libraries"); // './versions/version/version.jar' -> './libraries/'
 

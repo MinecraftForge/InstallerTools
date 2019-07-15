@@ -120,6 +120,9 @@ public class DeobfRealms extends Task {
                 return;
             }
 
+            if (!target.getParentFile().exists() && !target.getParentFile().mkdirs())
+                error("Can not create parent directory \"" + target.getParentFile().getAbsolutePath() +"\" Aborting.");
+
             if (!vanilla.exists()) {
                 if (artifact == null || artifact.url == null)
                     error("Can not downloaad missing realms jar \"" + vanilla.getAbsolutePath() + "\" and no download information avalible.");

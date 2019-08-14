@@ -23,9 +23,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
@@ -48,6 +46,7 @@ import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
+import net.minecraftforge.installertools.util.Utils;
 
 public class SrgMcpRenamer extends Task {
 
@@ -116,7 +115,7 @@ public class SrgMcpRenamer extends Task {
                 ZipEntry ein = null;
                 while ((ein = zin.getNextEntry()) != null) {
                     if (ein.getName().endsWith(".class")) {
-                        byte[] data = toByteArray(zin);
+                        byte[] data = Utils.toByteArray(zin);
 
                         ClassReader reader = new ClassReader(data);
                         ClassWriter writer = new ClassWriter(0);
@@ -129,7 +128,7 @@ public class SrgMcpRenamer extends Task {
                         zout.write(data);
                     } else {
                         zout.putNextEntry(ein);
-                        copy(zin, zout);
+                        Utils.copy(zin, zout);
                     }
                 }
             }
@@ -141,20 +140,6 @@ public class SrgMcpRenamer extends Task {
         } catch (OptionException e) {
             parser.printHelpOn(System.out);
             e.printStackTrace();
-        }
-    }
-
-    private byte[] toByteArray(InputStream input) throws IOException {
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        copy(input, output);
-        return output.toByteArray();
-    }
-
-    private void copy(InputStream input, OutputStream output) throws IOException {
-        byte[] buf = new byte[0x100];
-        int cnt = 0;
-        while ((cnt = input.read(buf, 0, buf.length)) != -1) {
-            output.write(buf, 0, cnt);
         }
     }
 }

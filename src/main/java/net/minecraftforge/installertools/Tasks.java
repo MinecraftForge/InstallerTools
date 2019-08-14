@@ -25,7 +25,8 @@ public enum Tasks {
     CREATE_DIR(CreateDirectory::new),
     CREATE_PARENTS(CreateParents::new),
     DEOBF_REALMS(DeobfRealms::new),
-    SRG_TO_MCP(SrgMcpRenamer::new);
+    SRG_TO_MCP(SrgMcpRenamer::new),
+    EXTRACT_INHERITANCE(ExtractInheritance::new);
 
     private Supplier<? extends Task> supplier;
 

@@ -22,7 +22,7 @@ def gitVersion() {
     def hash = desc.remove(desc.size() - 1)
     def offset = desc.remove(desc.size() - 1)
     def tag = desc.join('-')
-    def branch = grgit.branch.current().name    
+    def branch = grgit.branch.current().name
     return "${tag}.${offset}${t -> if (branch != 'master') t << '-' + branch}"
 }
 
@@ -56,6 +56,7 @@ dependencies {
     compile 'net.sf.jopt-simple:jopt-simple:5.0.4'
     compile 'com.google.code.gson:gson:2.8.0'
     compile 'net.md-5:SpecialSource:1.8.5'
+    compile 'de.siegmar:fastcsv:1.0.2'
 }
 
 publishing {

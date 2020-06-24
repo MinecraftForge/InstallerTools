@@ -28,6 +28,8 @@ import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -49,14 +51,13 @@ import joptsimple.OptionSpec;
 import net.minecraftforge.installertools.util.Utils;
 
 public class SrgMcpRenamer extends Task {
-
     @Override
     public void process(String[] args) throws IOException {
-
         OptionParser parser = new OptionParser();
         OptionSpec<File> mcpO = parser.accepts("mcp").withRequiredArg().ofType(File.class).required();
         OptionSpec<File> inputO = parser.accepts("input").withRequiredArg().ofType(File.class).required();
         OptionSpec<File> outputO = parser.accepts("output").withRequiredArg().ofType(File.class).required();
+        parser.accepts("strip-signatures");
 
         try {
             OptionSet options = parser.parse(args);
@@ -64,6 +65,7 @@ public class SrgMcpRenamer extends Task {
             File mcp = options.valueOf(mcpO).getAbsoluteFile();
             File input = options.valueOf(inputO).getAbsoluteFile();
             File output = options.valueOf(outputO).getAbsoluteFile();
+            boolean stripSignatures = options.has("strip-signatures");
 
             log("Input:  " + input);
             log("Output: " + output);
@@ -126,6 +128,29 @@ public class SrgMcpRenamer extends Task {
                         eout.setTime(0x386D4380); //01/01/2000 00:00:00 java 8 breaks when using 0.
                         zout.putNextEntry(eout);
                         zout.write(data);
+                    } else if (stripSignatures && ein.getName().startsWith("META-INF/") && (ein.getName().endsWith(".SF") || ein.getName().endsWith(".RSA"))) {
+                        log("Stripped signature entry data " + ein.getName());
+                    } else if (stripSignatures && ein.getName().endsWith("META-INF/MANIFEST.MF")) {
+                        Manifest min = new Manifest(zin);
+                        Manifest mout = new Manifest();
+                        mout.getMainAttributes().putAll(min.getMainAttributes());
+                        min.getEntries().forEach((name, ain) -> {
+                            final Attributes aout = new Attributes();
+                            ain.forEach((k, v) -> {
+                                if (!"SHA-256-Digest".equalsIgnoreCase(k.toString())) {
+                                    aout.put(k, v);
+                                }
+                            });
+                            if (!aout.values().isEmpty()) {
+                                mout.getEntries().put(name, aout);
+                            }
+                        });
+
+                        ZipEntry eout = new ZipEntry(ein.getName());
+                        eout.setTime(0x386D4380); //01/01/2000 00:00:00 java 8 breaks when using 0.
+                        zout.putNextEntry(eout);
+                        mout.write(zout);
+                        log("Stripped Manifest of sha digests");
                     } else {
                         zout.putNextEntry(ein);
                         Utils.copy(zin, zout);

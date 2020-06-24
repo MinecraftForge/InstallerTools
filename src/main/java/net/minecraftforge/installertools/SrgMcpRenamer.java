@@ -57,7 +57,7 @@ public class SrgMcpRenamer extends Task {
         OptionSpec<File> mcpO = parser.accepts("mcp").withRequiredArg().ofType(File.class).required();
         OptionSpec<File> inputO = parser.accepts("input").withRequiredArg().ofType(File.class).required();
         OptionSpec<File> outputO = parser.accepts("output").withRequiredArg().ofType(File.class).required();
-        OptionSpec<Boolean> stripSignatures0 = parser.accepts("strip-signatures").withRequiredArg().ofType(Boolean.class);
+        parser.accepts("strip-signatures");
 
         try {
             OptionSet options = parser.parse(args);
@@ -65,8 +65,7 @@ public class SrgMcpRenamer extends Task {
             File mcp = options.valueOf(mcpO).getAbsoluteFile();
             File input = options.valueOf(inputO).getAbsoluteFile();
             File output = options.valueOf(outputO).getAbsoluteFile();
-            Boolean stripSignaturesOption = options.valueOf(stripSignatures0);
-            boolean stripSignatures = stripSignaturesOption == null? false : stripSignaturesOption;
+            boolean stripSignatures = options.has("strip-signatures");
 
             log("Input:  " + input);
             log("Output: " + output);
@@ -129,9 +128,9 @@ public class SrgMcpRenamer extends Task {
                         eout.setTime(0x386D4380); //01/01/2000 00:00:00 java 8 breaks when using 0.
                         zout.putNextEntry(eout);
                         zout.write(data);
-                    } else if (stripSignatures && (ein.getName().endsWith(".SF") || ein.getName().endsWith(".RSA"))) {
+                    } else if (stripSignatures && ein.getName().startsWith("META-INF/") && (ein.getName().endsWith(".SF") || ein.getName().endsWith(".RSA"))) {
                         log("Stripped signature entry data " + ein.getName());
-                    } else if (stripSignatures && ein.getName().endsWith("MANIFEST.MF")) {
+                    } else if (stripSignatures && ein.getName().endsWith("META-INF/MANIFEST.MF")) {
                         Manifest min = new Manifest(zin);
                         Manifest mout = new Manifest();
                         mout.getMainAttributes().putAll(min.getMainAttributes());

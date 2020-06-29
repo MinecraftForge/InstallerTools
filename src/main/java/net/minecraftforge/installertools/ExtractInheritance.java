@@ -22,24 +22,28 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.Map.Entry;
 import java.util.zip.ZipFile;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodInsnNode;
@@ -208,6 +212,7 @@ public class ExtractInheritance extends Task {
         public final String superName;
         public final List<String> interfaces;
         public final Map<String, MethodInfo> methods;
+        public final Map<String, FieldInfo> fields;
 
         private boolean resolved = false;
 
@@ -229,6 +234,11 @@ public class ExtractInheritance extends Task {
             if (!node.methods.isEmpty())
                 node.methods.forEach(mn -> lst.add(new MethodInfo(this, mn)));
             this.methods = makeMap(lst);
+
+            if (!node.fields.isEmpty())
+                this.fields = node.fields.stream().map(FieldInfo::new).collect(Collectors.toMap(e -> e.name, e -> e));
+            else
+                this.fields = null;
         }
 
         ClassInfo(Class<?> node) {
@@ -249,10 +259,34 @@ public class ExtractInheritance extends Task {
                 mtds.add(new MethodInfo(this, mtd));
 
             this.methods = makeMap(mtds);
+
+            Field[] flds = node.getDeclaredFields();
+            if (flds != null && flds.length > 0)
+                this.fields = Arrays.asList(flds).stream().map(FieldInfo::new).collect(Collectors.toMap(e -> e.name, e -> e));
+            else
+                this.fields = null;
         }
 
         public MethodInfo getMethod(String name, String desc) {
             return methods == null ? null : methods.get(name + " " + desc);
+        }
+    }
+
+    private static class FieldInfo {
+        private final String name;
+        public final String desc;
+        public final int access;
+
+        public FieldInfo(FieldNode node) {
+            this.name = node.name;
+            this.desc = node.desc;
+            this.access = node.access;
+        }
+
+        public FieldInfo(Field node) {
+            this.name = node.getName();
+            this.desc = Type.getType(node.getType()).getDescriptor();
+            this.access = node.getModifiers();
         }
     }
 

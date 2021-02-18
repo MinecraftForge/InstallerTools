@@ -1,29 +1,21 @@
 plugins {
-  id 'net.minecrell.licenser' version '0.3'
-  id 'org.ajoberstar.grgit' version '2.3.0'
+  id 'maven-publish'
+  id 'java'
+  id 'eclipse'
+  id 'org.cadixdev.licenser' version '0.5.0'
+  id 'org.ajoberstar.grgit' version '4.1.0'
   id 'com.github.johnrengelman.shadow' version '2.0.4'
 }
 
-apply plugin: 'maven'
-apply plugin: 'maven-publish'
-apply plugin: 'java'
-apply plugin: 'eclipse'
-
 group = 'net.minecraftforge'
-version = gitVersion()
-targetCompatibility = sourceCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
+
+version = (grgit.describe(longDescr: true, tags: true) ?: 'unknown-unknown-unknown').split('-').with { "${it[0]}.${it[1]}" }
+println('Version: ' + version)
+java.toolchain.languageVersion = JavaLanguageVersion.of(8)
 
 repositories {
     mavenCentral()
-}
-
-def gitVersion() {
-    def desc = grgit.describe(longDescr: true).split('-') as List
-    def hash = desc.remove(desc.size() - 1)
-    def offset = desc.remove(desc.size() - 1)
-    def tag = desc.join('-')
-    def branch = grgit.branch.current().name
-    return "${tag}.${offset}${t -> if (branch != 'master') t << '-' + branch}"
+    maven { url 'https://files.minecraftforge.net/maven/' }
 }
 
 license {
@@ -53,10 +45,11 @@ artifacts {
 }
 
 dependencies {
-    compile 'net.sf.jopt-simple:jopt-simple:5.0.4'
-    compile 'com.google.code.gson:gson:2.8.0'
-    compile 'net.md-5:SpecialSource:1.8.5'
-    compile 'de.siegmar:fastcsv:1.0.2'
+    implementation 'net.sf.jopt-simple:jopt-simple:5.0.4'
+    implementation 'com.google.code.gson:gson:2.8.6'
+    implementation 'net.md-5:SpecialSource:1.8.5'
+    implementation 'de.siegmar:fastcsv:2.0.0'
+    implementation 'net.minecraftforge:srgutils:0.4.1'
 }
 
 publishing {

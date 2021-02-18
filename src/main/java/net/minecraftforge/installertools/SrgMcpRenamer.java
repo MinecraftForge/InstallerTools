@@ -1,6 +1,6 @@
 /*
  * InstallerTools
- * Copyright (c) 2019-2019.
+ * Copyright (c) 2019-2021.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,9 +41,7 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.Remapper;
 
-import de.siegmar.fastcsv.reader.CsvContainer;
-import de.siegmar.fastcsv.reader.CsvReader;
-import de.siegmar.fastcsv.reader.CsvRow;
+import de.siegmar.fastcsv.reader.NamedCsvReader;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
@@ -84,15 +82,13 @@ public class SrgMcpRenamer extends Task {
             try (ZipFile zip = new ZipFile(mcp)) {
                 List<ZipEntry> entries = zip.stream().filter(e -> e.getName().endsWith(".csv")).collect(Collectors.toList());
                 for (ZipEntry entry : entries) {
-                    CsvReader reader = new CsvReader();
-                    reader.setContainsHeader(true);
-                    CsvContainer csv = reader.read(new InputStreamReader(zip.getInputStream(entry)));
-                    for (CsvRow row : csv.getRows()) {
+                    NamedCsvReader reader = NamedCsvReader.builder().build(new InputStreamReader(zip.getInputStream(entry)));
+                    reader.stream().forEach(row -> {
                         String searge = row.getField("searge");
                         if (searge == null)
                             searge = row.getField("param");
                         map.put(searge, row.getField("name"));
-                    }
+                    });
                 }
             }
 

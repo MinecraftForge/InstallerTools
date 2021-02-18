@@ -1,6 +1,6 @@
 /*
  * InstallerTools
- * Copyright (c) 2019-2019.
+ * Copyright (c) 2019-2021.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,7 +26,9 @@ public enum Tasks {
     CREATE_PARENTS(CreateParents::new),
     DEOBF_REALMS(DeobfRealms::new),
     SRG_TO_MCP(SrgMcpRenamer::new),
-    EXTRACT_INHERITANCE(ExtractInheritance::new);
+    EXTRACT_INHERITANCE(ExtractInheritance::new),
+    CHAIN_MAPPING(ChainMappings::new),
+    MERGE_MAPPING(MergeMappings::new);
 
     private Supplier<? extends Task> supplier;
 

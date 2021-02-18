@@ -1,6 +1,6 @@
 /*
  * InstallerTools
- * Copyright (c) 2019-2019.
+ * Copyright (c) 2019-2021.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -212,6 +212,7 @@ public class ExtractInheritance extends Task {
         public final String superName;
         public final List<String> interfaces;
         public final Map<String, MethodInfo> methods;
+        @SuppressWarnings("unused")
         public final Map<String, FieldInfo> fields;
 
         private boolean resolved = false;
@@ -274,7 +275,9 @@ public class ExtractInheritance extends Task {
 
     private static class FieldInfo {
         private final String name;
+        @SuppressWarnings("unused")
         public final String desc;
+        @SuppressWarnings("unused")
         public final int access;
 
         public FieldInfo(FieldNode node) {
@@ -299,7 +302,6 @@ public class ExtractInheritance extends Task {
         private final ClassInfo parent;
         @SuppressWarnings("unused")
         public final Bouncer bouncer;
-
         @SuppressWarnings("unused")
         public String override = null;
 

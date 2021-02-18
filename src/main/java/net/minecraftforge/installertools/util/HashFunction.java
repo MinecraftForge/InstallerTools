@@ -1,6 +1,6 @@
 /*
  * InstallerTools
- * Copyright (c) 2019-2019.
+ * Copyright (c) 2019-2021.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,7 +39,7 @@ public enum HashFunction {
 
     private HashFunction(String algo, int length) {
         this.algo = algo;
-        this.pad = String.format("%0" + length + "d", 0);
+        this.pad = String.format(Locale.ENGLISH, "%0" + length + "d", 0);
     }
 
     public String getExtension() {

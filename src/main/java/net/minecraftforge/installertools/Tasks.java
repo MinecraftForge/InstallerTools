@@ -28,7 +28,8 @@ public enum Tasks {
     SRG_TO_MCP(SrgMcpRenamer::new),
     EXTRACT_INHERITANCE(ExtractInheritance::new),
     CHAIN_MAPPING(ChainMappings::new),
-    MERGE_MAPPING(MergeMappings::new);
+    MERGE_MAPPING(MergeMappings::new),
+    COPY(Copy::new);
 
     private Supplier<? extends Task> supplier;
 

@@ -47,6 +47,7 @@ public class Copy extends Task {
             log("Output: " + output);
 
             if (!input.exists()) error("Missing required input: " + input);
+            if (output.exists() && output.isDirectory()) error("Output is a directory: " + output);
 
             if (output.exists()) output.delete();
             if (!output.getParentFile().exists()) output.getParentFile().mkdirs();

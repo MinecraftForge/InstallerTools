@@ -50,10 +50,14 @@ public class VersionJson {
 
     public static VersionJson load(File path) {
         try (InputStream stream = new FileInputStream(path)) {
-            return GSON.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), VersionJson.class);
+            return load(stream);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static VersionJson load(InputStream stream) {
+        return GSON.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), VersionJson.class);
     }
 
     public Arguments arguments;

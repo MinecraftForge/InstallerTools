@@ -41,8 +41,10 @@ public class ChainMappings extends Task {
     public void process(String[] args) throws IOException {
         OptionParser parser = new OptionParser();
         OptionSpec<File> leftO = parser.accepts("left").withRequiredArg().ofType(File.class).required();
+        OptionSpec<Void> reverseLeftO = parser.accepts("reverse-left");
         OptionSpec<String> leftNamesO = parser.accepts("left-names").withRequiredArg().ofType(String.class);
         OptionSpec<File> rightO = parser.accepts("right").withRequiredArg().ofType(File.class).required();
+        OptionSpec<Void> reverseRightO = parser.accepts("reverse-right");
         OptionSpec<String> rightNamesO = parser.accepts("right-names").withRequiredArg().ofType(String.class);
         OptionSpec<File> outputO = parser.accepts("output").withRequiredArg().ofType(File.class).required();
 
@@ -67,8 +69,10 @@ public class ChainMappings extends Task {
             final boolean params  = !selective || options.has(paramsO);
 
             log("Left:    " + left);
+            log("         Reversed=" + options.has(reverseLeftO));
             log("         " + (leftNames == null ? "null" : options.valueOf(leftNamesO)));
             log("Right:   " + right);
+            log("         Reversed=" + options.has(reverseRightO));
             log("         " + (rightNames == null ? "null" : options.valueOf(rightNamesO)));
             log("Classes: " + classes);
             log("Fields:  " + fields);
@@ -89,7 +93,11 @@ public class ChainMappings extends Task {
 
 
             IMappingFile leftM = leftNames == null ? IMappingFile.load(left) : INamedMappingFile.load(left).getMap(leftNames[0], leftNames[1]);
+            if (options.has(reverseLeftO))
+                leftM = leftM.reverse();
             IMappingFile rightM = rightNames == null ? IMappingFile.load(right) : INamedMappingFile.load(right).getMap(rightNames[0], rightNames[1]);
+            if (options.has(reverseRightO))
+                rightM = rightM.reverse();
             IMappingFile outputM = leftM.rename(makeRenamer(rightM, classes, fields, methods, params));
 
             outputM.write(output.toPath(), IMappingFile.Format.TSRG2, false);

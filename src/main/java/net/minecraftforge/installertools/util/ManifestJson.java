@@ -16,29 +16,27 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-package net.minecraftforge.installertools;
+package net.minecraftforge.installertools.util;
 
-import java.util.function.Supplier;
+import java.net.URL;
 
-public enum Tasks {
-    MCP_DATA(McpData::new),
-    CREATE_DIR(CreateDirectory::new),
-    CREATE_PARENTS(CreateParents::new),
-    DEOBF_REALMS(DeobfRealms::new),
-    SRG_TO_MCP(SrgMcpRenamer::new),
-    EXTRACT_INHERITANCE(ExtractInheritance::new),
-    CHAIN_MAPPING(ChainMappings::new),
-    MERGE_MAPPING(MergeMappings::new),
-    DOWNLOAD_MOJMAPS(DownloadMojmaps::new);
+public class ManifestJson {
+    public VersionInfo[] versions;
 
-    private Supplier<? extends Task> supplier;
-
-    private Tasks(Supplier<? extends Task> supplier) {
-        this.supplier = supplier;
+    public static class VersionInfo {
+        public String id;
+        public URL url;
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends Task> T get() {
-        return (T)supplier.get();
+    public URL getUrl(String version) {
+        if (version == null) {
+            return null;
+        }
+        for (VersionInfo info : versions) {
+            if (version.equals(info.id)) {
+                return info.url;
+            }
+        }
+        return null;
     }
 }

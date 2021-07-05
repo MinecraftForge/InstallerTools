@@ -1,15 +1,25 @@
-plugins {
-  id 'maven-publish'
-  id 'java'
-  id 'eclipse'
-  id 'org.cadixdev.licenser' version '0.5.0'
-  id 'org.ajoberstar.grgit' version '4.1.0'
-  id 'com.github.johnrengelman.shadow' version '2.0.4'
+buildscript {
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net/' }
+    }
+    dependencies {
+        classpath 'net.minecraftforge:GradleUtils:1.+'
+    }
 }
+
+plugins {
+  id 'java-library'
+  id 'maven-publish'
+  id 'eclipse'
+  id 'org.cadixdev.licenser' version '0.6.1'
+  id 'com.github.johnrengelman.shadow' version '7.0.0'
+  id 'com.github.ben-manes.versions' version '0.39.0'
+}
+apply plugin: 'net.minecraftforge.gradleutils'
 
 group = 'net.minecraftforge'
 
-version = (grgit.describe(longDescr: true, tags: true) ?: 'unknown-unknown-unknown').split('-').with { "${it[0]}.${it[1]}" }
+version = gradleutils.getTagOffsetVersion()
 println('Version: ' + version)
 java.toolchain.languageVersion = JavaLanguageVersion.of(8)
 
@@ -20,7 +30,7 @@ repositories {
 
 license {
   header project.file('LICENSE-header.txt')
-  include 'net/minecraftforge/installertools/**/*.java'
+  include 'net/minecraftforge/installertools/** /*.java'
   newLine false
 }
 
@@ -33,6 +43,7 @@ shadowJar {
     manifest.attributes('Main-Class': 'net.minecraftforge.installertools.ConsoleTool')
     manifest.attributes('Implementation-Version': project.version)
 }
+
 task sourcesJar(type: Jar) {
     classifier = 'sources'
     from sourceSets.main.allSource
@@ -46,10 +57,11 @@ artifacts {
 
 dependencies {
     implementation 'net.sf.jopt-simple:jopt-simple:5.0.4'
-    implementation 'com.google.code.gson:gson:2.8.6'
-    implementation 'net.md-5:SpecialSource:1.8.5'
+    implementation 'com.google.code.gson:gson:2.8.7'
+    implementation 'net.md-5:SpecialSource:1.10.0'
     implementation 'de.siegmar:fastcsv:2.0.0'
-    implementation 'net.minecraftforge:srgutils:0.4.1'
+    implementation 'net.minecraftforge:srgutils:0.4.3'
+    implementation 'org.ow2.asm:asm-commons:9.1'
 }
 
 publishing {

@@ -29,7 +29,8 @@ public enum Tasks {
     EXTRACT_INHERITANCE(ExtractInheritance::new),
     CHAIN_MAPPING(ChainMappings::new),
     MERGE_MAPPING(MergeMappings::new),
-    DOWNLOAD_MOJMAPS(DownloadMojmaps::new);
+    DOWNLOAD_MOJMAPS(DownloadMojmaps::new),
+    EXTRACT_FILES(ExtractFiles::new);
 
     private Supplier<? extends Task> supplier;
 

@@ -30,12 +30,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class ExtractFiles extends Task {
 
@@ -43,21 +38,23 @@ public class ExtractFiles extends Task {
     public void process(String[] args) throws IOException {
         OptionParser parser = new OptionParser();
         OptionSpec<File> archiveO = parser.accepts("archive", "The archive").withRequiredArg().ofType(File.class).required();
-        OptionSpec<File> targetO = parser.accepts("target", "The target directory").withRequiredArg().ofType(File.class).required();
-        OptionSpec<String> filesO = parser.accepts("files", "A comma-separated list of files to extract").withRequiredArg().ofType(String.class).required();
-        OptionSpec<String> filesReplaceO = parser.accepts("filesReplace", "A comma-separated list of files to extract and replace tokens").withRequiredArg().ofType(String.class);
-        OptionSpec<String> executablesO = parser.accepts("executables", "A comma-separated list of files to extract and set the executable bit").withRequiredArg().ofType(String.class);
-        OptionSpec<String> tokensO = parser.accepts("token", "Tokens to replace").withRequiredArg().ofType(String.class);
+        OptionSpec<String> fromO = parser.accepts("from", "File in the archive to extract").withRequiredArg().ofType(String.class).required();
+        OptionSpec<File>   toO   = parser.accepts("to"  , "Path to extract file to"       ).withRequiredArg().ofType(File.class  ).required();
+        OptionSpec<File> execsO = parser.accepts("execs", "A file to set the executable flag on").withRequiredArg().ofType(File.class);
 
         try {
             OptionSet options = parser.parse(args);
 
             File archive = options.valueOf(archiveO);
-            File target = options.valueOf(targetO);
-            Path targetPath = target.toPath();
-            Set<String> files = Arrays.stream(options.valueOf(filesO).split(",")).collect(Collectors.toSet());
-            List<String> filesReplace = options.has(filesReplaceO) ? Arrays.asList(options.valueOf(filesReplaceO).split(",")) : null;
-            List<String> executables = options.has(filesReplaceO) ? Arrays.asList(options.valueOf(executablesO).split(",")) : null;
+
+            List<String> from = options.valuesOf(fromO);
+            List<File>   to   = options.valuesOf(toO);
+            if (from.size() != to.size())
+                throw new IllegalArgumentException("Invalid arguments, must have matching from/to set");
+
+            List<File> execs = options.valuesOf(execsO);
+
+            /*
             Map<String, String> tokens = new HashMap<>();
             String prev = null;
             for (String s : options.valuesOf(tokensO)) {
@@ -68,32 +65,33 @@ public class ExtractFiles extends Task {
                     prev = null;
                 }
             }
+            */
 
-            log("Archive:       " + archive);
-            log("Target:        " + target);
-            log("Files:         " + files);
-            log("Files Replace: " + filesReplace);
-            log("Executables:   " + executables);
-            log("Tokens:        " + tokens);
-            if (filesReplace != null)
-                files.addAll(filesReplace);
-            if (executables != null)
-                files.addAll(executables);
+            log("Archive: " + archive);
+            for (int x = 0; x < from.size(); x++) {
+            log("Extract: " + from.get(x));
+            log("         " + to.get(x));
+            }
+            for (int x = 0; x < execs.size(); x++) {
+            log("Exec:    " + execs.get(x));
+            }
 
             if (!archive.exists())
                 error("Could not find archive: " + archive);
-            if (!target.exists() && !target.mkdirs())
-                error("Could not make target folder: " + target);
 
             try (FileSystem fs = FileSystems.newFileSystem(archive.toPath(), null)) {
-                for (String file : files) {
-                    Path path = fs.getPath(file);
+                for (int x = 0; x < from.size(); x++) {
+                    Path path = fs.getPath(from.get(x));
                     if (!Files.exists(path))
-                        log("Could not find file in archive: " + file);
-                    Path copyTo = targetPath.resolve(path.toString());
-                    if (!Files.exists(copyTo.getParent()) && !copyTo.getParent().toFile().mkdirs())
-                        error("Couldn't make parent directory: " + copyTo.getParent().toAbsolutePath());
+                        log("Could not find file in archive: " + from.get(x));
 
+                    File toF = to.get(x);
+                    if (!toF.getParentFile().exists() && !toF.getParentFile().mkdirs())
+                        error("Couldn't make parent directory: " + toF.getParentFile().getAbsolutePath());
+
+                    Files.copy(path, toF.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+                    /*
                     if (filesReplace != null && filesReplace.contains(file)) {
                         List<String> lines = Files.readAllLines(path).stream()
                                 .map(s -> {
@@ -106,10 +104,13 @@ public class ExtractFiles extends Task {
                     } else {
                         Files.copy(path, copyTo, StandardCopyOption.REPLACE_EXISTING);
                     }
-                    if (executables != null && executables.contains(file) && !copyTo.toFile().setExecutable(true)) {
-                        log("Couldn't set executable bit for file: " + copyTo.toAbsolutePath());
-                    }
+                    */
                 }
+            }
+
+            for (File exec : execs) {
+                if (!exec.setExecutable(true))
+                    log("Couldn't set executable bit for file: " + exec.getAbsolutePath());
             }
         } catch (OptionException e) {
             parser.printHelpOn(System.out);

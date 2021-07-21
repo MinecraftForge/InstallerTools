@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ExtractFiles extends Task {
 
@@ -40,6 +41,7 @@ public class ExtractFiles extends Task {
         OptionSpec<File> archiveO = parser.accepts("archive", "The archive").withRequiredArg().ofType(File.class).required();
         OptionSpec<String> fromO = parser.accepts("from", "File in the archive to extract").withRequiredArg().ofType(String.class).required();
         OptionSpec<File>   toO   = parser.accepts("to"  , "Path to extract file to"       ).withRequiredArg().ofType(File.class  ).required();
+        OptionSpec<File> optionalO = parser.accepts("optional", "Optional paths to extract files to only if they don't already exist").withRequiredArg().ofType(File.class);
         OptionSpec<File> execsO = parser.accepts("execs", "A file to set the executable flag on").withRequiredArg().ofType(File.class);
 
         try {
@@ -53,6 +55,7 @@ public class ExtractFiles extends Task {
                 throw new IllegalArgumentException("Invalid arguments, must have matching from/to set");
 
             List<File> execs = options.valuesOf(execsO);
+            List<String> optional = options.valuesOf(optionalO).stream().map(File::getAbsolutePath).collect(Collectors.toList());
 
             /*
             Map<String, String> tokens = new HashMap<>();
@@ -89,7 +92,8 @@ public class ExtractFiles extends Task {
                     if (!toF.getParentFile().exists() && !toF.getParentFile().mkdirs())
                         error("Couldn't make parent directory: " + toF.getParentFile().getAbsolutePath());
 
-                    Files.copy(path, toF.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    if (!optional.contains(toF.getAbsolutePath()) || !toF.exists())
+                        Files.copy(path, toF.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
                     /*
                     if (filesReplace != null && filesReplace.contains(file)) {

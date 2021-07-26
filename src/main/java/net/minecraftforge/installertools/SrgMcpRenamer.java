@@ -25,13 +25,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
+import java.nio.file.attribute.FileTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.function.Predicate;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -84,9 +89,12 @@ public class SrgMcpRenamer extends Task {
                 for (ZipEntry entry : entries) {
                     NamedCsvReader reader = NamedCsvReader.builder().build(new InputStreamReader(zip.getInputStream(entry)));
                     reader.stream().forEach(row -> {
-                        String searge = row.getField("searge");
-                        if (searge == null)
+                        String searge;
+                        try {
+                            searge = row.getField("searge");
+                        } catch (NoSuchElementException e) {
                             searge = row.getField("param");
+                        }
                         map.put(searge, row.getField("name"));
                     });
                 }
@@ -107,51 +115,30 @@ public class SrgMcpRenamer extends Task {
                 }
             };
 
+            log("Processing ZIP file");
+            List<ZipEntryProcessor> processors = new ArrayList<>();
+            processors.add(new ZipEntryProcessor(ein -> ein.getName().endsWith(".class"), (ein, zin, zout) -> this.processClass(ein, zin, zout, remapper)));
+
+            if (stripSignatures) {
+                processors.add(new ZipEntryProcessor(this::holdsSignatures, (ein, zin, zout) -> log("Stripped signature entry data " + ein.getName())));
+                processors.add(new ZipEntryProcessor(ein -> ein.getName().endsWith("META-INF/MANIFEST.MF"), this::processManifest));
+            }
+
+            ZipWritingConsumer defaultProcessor = (ein, zin, zout) -> {
+                zout.putNextEntry(makeNewEntry(ein));
+                Utils.copy(zin, zout);
+            };
+
             ByteArrayOutputStream memory = input.equals(output) ? new ByteArrayOutputStream() : null;
             try (ZipOutputStream zout = new ZipOutputStream(memory == null ? new FileOutputStream(output) : memory);
-                ZipInputStream zin = new ZipInputStream(new FileInputStream(input))) {
-                ZipEntry ein = null;
-                while ((ein = zin.getNextEntry()) != null) {
-                    if (ein.getName().endsWith(".class")) {
-                        byte[] data = Utils.toByteArray(zin);
+                ZipInputStream in = new ZipInputStream(new FileInputStream(input))) {
 
-                        ClassReader reader = new ClassReader(data);
-                        ClassWriter writer = new ClassWriter(0);
-                        reader.accept(new ClassRemapper(writer, remapper), 0);
-                        data = writer.toByteArray();
-
-                        ZipEntry eout = new ZipEntry(ein.getName());
-                        eout.setTime(0x386D4380); //01/01/2000 00:00:00 java 8 breaks when using 0.
-                        zout.putNextEntry(eout);
-                        zout.write(data);
-                    } else if (stripSignatures && ein.getName().startsWith("META-INF/") && (ein.getName().endsWith(".SF") || ein.getName().endsWith(".RSA"))) {
-                        log("Stripped signature entry data " + ein.getName());
-                    } else if (stripSignatures && ein.getName().endsWith("META-INF/MANIFEST.MF")) {
-                        Manifest min = new Manifest(zin);
-                        Manifest mout = new Manifest();
-                        mout.getMainAttributes().putAll(min.getMainAttributes());
-                        min.getEntries().forEach((name, ain) -> {
-                            final Attributes aout = new Attributes();
-                            ain.forEach((k, v) -> {
-                                if (!"SHA-256-Digest".equalsIgnoreCase(k.toString())) {
-                                    aout.put(k, v);
-                                }
-                            });
-                            if (!aout.values().isEmpty()) {
-                                mout.getEntries().put(name, aout);
-                            }
-                        });
-
-                        ZipEntry eout = new ZipEntry(ein.getName());
-                        eout.setTime(0x386D4380); //01/01/2000 00:00:00 java 8 breaks when using 0.
-                        zout.putNextEntry(eout);
-                        mout.write(zout);
-                        log("Stripped Manifest of sha digests");
-                    } else {
-                        zout.putNextEntry(ein);
-                        Utils.copy(zin, zout);
-                    }
-                }
+                forEachZipEntry(in, (ein, zin) -> processors.stream()
+                        .filter(it -> it.validate(ein))
+                        .findFirst()
+                        .map(ZipEntryProcessor::getProcessor)
+                        .orElse(defaultProcessor)
+                        .process(ein, zin, zout));
             }
 
             if (memory != null)
@@ -162,5 +149,101 @@ public class SrgMcpRenamer extends Task {
             parser.printHelpOn(System.out);
             e.printStackTrace();
         }
+    }
+
+    private void forEachZipEntry(ZipInputStream zin, ZipConsumer entryConsumer) throws IOException {
+        String prevName = null;
+        ZipEntry ein;
+        while ((ein = zin.getNextEntry()) != null) {
+            try {
+                entryConsumer.processEntry(ein, zin);
+            } catch (ZipException e) {
+                throw new RuntimeException("Unable to process entry '" + ein.getName() + "' due to an error when processing previous entry '" + prevName + "'", e);
+            }
+            prevName = ein.getName();
+        }
+    }
+
+    private void processClass(final ZipEntry ein, final ZipInputStream zin, final ZipOutputStream zout, final Remapper remapper) throws IOException {
+        byte[] data = Utils.toByteArray(zin);
+
+        ClassReader reader = new ClassReader(data);
+        ClassWriter writer = new ClassWriter(0);
+        reader.accept(new ClassRemapper(writer, remapper), 0);
+        data = writer.toByteArray();
+
+        zout.putNextEntry(makeNewEntry(ein));
+        zout.write(data);
+    }
+
+    private void processManifest(final ZipEntry ein, final ZipInputStream zin, final ZipOutputStream zout) throws IOException {
+        Manifest min = new Manifest(zin);
+        Manifest mout = new Manifest();
+        mout.getMainAttributes().putAll(min.getMainAttributes());
+        min.getEntries().forEach((name, ain) -> {
+            final Attributes aout = new Attributes();
+            ain.forEach((k, v) -> {
+                if (!"SHA-256-Digest".equalsIgnoreCase(k.toString())) {
+                    aout.put(k, v);
+                }
+            });
+            if (!aout.values().isEmpty()) {
+                mout.getEntries().put(name, aout);
+            }
+        });
+
+        zout.putNextEntry(makeNewEntry(ein));
+        mout.write(zout);
+        log("Stripped Manifest of sha digests");
+    }
+
+    private boolean holdsSignatures(final ZipEntry ein) {
+        return ein.getName().startsWith("META-INF/") && (ein.getName().endsWith(".SF") || ein.getName().endsWith(".RSA"));
+    }
+
+    private ZipEntry makeNewEntry(ZipEntry oldEntry) {
+        ZipEntry newEntry = new ZipEntry(oldEntry.getName());
+
+        // This is mandatory
+        if (oldEntry.getLastModifiedTime() != null) {
+            newEntry.setLastModifiedTime(oldEntry.getLastModifiedTime());
+        } else {
+            newEntry.setLastModifiedTime(FileTime.fromMillis(0x386D4380)); //01/01/2000 00:00:00 java 8 breaks when using 0.
+        }
+
+        // Optional arguments
+        if (oldEntry.getCreationTime() != null) newEntry.setCreationTime(oldEntry.getCreationTime());
+        if (oldEntry.getLastAccessTime() != null) newEntry.setLastAccessTime(oldEntry.getLastAccessTime());
+        if (oldEntry.getComment() != null) newEntry.setComment(oldEntry.getComment());
+
+        return newEntry;
+    }
+
+    private static class ZipEntryProcessor {
+        private final Predicate<ZipEntry> validator;
+        private final ZipWritingConsumer consumer;
+
+        ZipEntryProcessor(Predicate<ZipEntry> validator, ZipWritingConsumer consumer) {
+            this.validator = validator;
+            this.consumer = consumer;
+        }
+
+        boolean validate(ZipEntry ein) {
+            return this.validator.test(ein);
+        }
+
+        ZipWritingConsumer getProcessor() {
+            return this.consumer;
+        }
+    }
+
+    @FunctionalInterface
+    private interface ZipWritingConsumer {
+        void process(ZipEntry ein, ZipInputStream zin, ZipOutputStream zout) throws IOException;
+    }
+
+    @FunctionalInterface
+    private interface ZipConsumer {
+        void processEntry(ZipEntry entry, ZipInputStream stream) throws IOException;
     }
 }

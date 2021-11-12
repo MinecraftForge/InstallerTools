@@ -48,7 +48,7 @@ public class BundlerExtract extends Task {
         OptionSpec<File> outputO = parser.accepts("output", "Output file if extracting single entry, or output directory").withRequiredArg().ofType(File.class).required();
         OptionSpec<Void> allO = parser.accepts("all", "Extract all files from the bundle.");
         OptionSpec<Void> jarOnlyO = parser.accepts("jar-only", "Only extract the main version jar file");
-        //TODO: Libraries?
+        OptionSpec<Void> librariesO = parser.accepts("libraries", "Only extract the libraries");
 
         try {
             OptionSet options = parser.parse(args);
@@ -57,6 +57,7 @@ public class BundlerExtract extends Task {
             File output = options.valueOf(outputO).getAbsoluteFile();
             boolean all = options.has(allO);
             boolean jarOnly = options.has(jarOnlyO);
+            boolean libs = options.has(librariesO);
             if (all && jarOnly)
                 error("Can not specify --all and --jar-only at the same time");
 
@@ -64,6 +65,7 @@ public class BundlerExtract extends Task {
             log("Output:  " + output);
             log("All:     " + all);
             log("JarOnly: " + jarOnly);
+            log("Libs:    " + libs);
 
             if (!input.exists())
                 error("Could not find input: " + input);
@@ -100,6 +102,12 @@ public class BundlerExtract extends Task {
                         error("Could not find main jar in versions.list");
 
                     extractFile("versions", fs, entry, output);
+                } else if (libs) {
+                    if (output.exists() && output.isFile())
+                        error("Can not extract to " + output + " as it is a file, not a directory");
+
+                    for (FileList.Entry entry : libraries.entries)
+                        extractFile("libraries", fs, entry, new File(output, entry.path));
                 } else if (all) {
                     if (output.exists() && output.isFile())
                         error("Can not extract to " + output + " as it is a file, not a directory");
@@ -108,7 +116,6 @@ public class BundlerExtract extends Task {
                         extractFile("libraries", fs, entry, new File(output, "libraries/" + entry.path));
                     for (FileList.Entry entry : versions.entries)
                         extractFile("versions", fs, entry, new File(output, "versions/" + entry.path));
-
                 } else {
                     error("Must specify either --jar only, or --all");
                 }
@@ -170,6 +177,7 @@ public class BundlerExtract extends Task {
 
         private static class Entry {
             private final String hash;
+            @SuppressWarnings("unused")
             private final String id;
             private final String path;
             private Entry(String hash, String id, String path) {

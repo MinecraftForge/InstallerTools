@@ -30,7 +30,9 @@ public enum Tasks {
     CHAIN_MAPPING(ChainMappings::new),
     MERGE_MAPPING(MergeMappings::new),
     DOWNLOAD_MOJMAPS(DownloadMojmaps::new),
-    EXTRACT_FILES(ExtractFiles::new);
+    EXTRACT_FILES(ExtractFiles::new),
+    BUNDLER_EXTRACT(BundlerExtract::new),
+    ;
 
     private Supplier<? extends Task> supplier;
 

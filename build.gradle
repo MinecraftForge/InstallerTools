@@ -3,9 +3,9 @@ plugins {
   id 'maven-publish'
   id 'eclipse'
   id 'org.cadixdev.licenser' version '0.6.1'
-  id 'com.github.johnrengelman.shadow' version '7.0.0'
-  id 'com.github.ben-manes.versions' version '0.39.0'
-  id 'net.minecraftforge.gradleutils' version '1.+'
+  id 'com.github.johnrengelman.shadow' version '7.1.2'
+  id 'com.github.ben-manes.versions' version '0.42.0'
+  id 'net.minecraftforge.gradleutils' version '2.+'
 }
 
 group = 'net.minecraftforge'
@@ -49,10 +49,10 @@ artifacts {
 dependencies {
     implementation 'net.sf.jopt-simple:jopt-simple:5.0.4'
     implementation 'com.google.code.gson:gson:2.8.7'
-    implementation 'net.md-5:SpecialSource:1.10.0'
+    implementation 'net.md-5:SpecialSource:1.11.0'
     implementation 'de.siegmar:fastcsv:2.0.0'
-    implementation 'net.minecraftforge:srgutils:0.4.3'
-    implementation 'org.ow2.asm:asm-commons:9.1'
+    implementation 'net.minecraftforge:srgutils:0.4.11'
+    implementation 'org.ow2.asm:asm-commons:9.3'
 }
 
 publishing {
@@ -92,19 +92,6 @@ publishing {
         }
     }
     repositories {
-        maven {
-            if (System.env.MAVEN_USER) {
-                url 'https://maven.minecraftforge.net/'
-                authentication {
-                    basic(BasicAuthentication)
-                }
-                credentials {
-                    username = System.env.MAVEN_USER ?: 'not'
-                    password = System.env.MAVEN_PASSWORD ?: 'set'
-                }
-            } else {
-                url 'file://' + rootProject.file('repo').getAbsolutePath()
-            }
-        }
+        maven gradleutils.getPublishingForgeMaven()
     }
 }

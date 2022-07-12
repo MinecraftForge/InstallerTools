@@ -4,6 +4,7 @@
 /repo/
 /.settings/
 /bin/
+/out/
 .classpath
 .project
 *.lzma

@@ -129,16 +129,14 @@ public class SrgMcpRenamer extends Task {
                 Utils.copy(zin, zout);
             };
 
+            processors.add(new ZipEntryProcessor(ein -> ein.getName().startsWith("META-INF/jarjar/") && ein.getName().endsWith(".jar"),
+                    (ein, zin, zout) -> this.processNestedJar(processors, defaultProcessor, ein, zin, zout)));
+
             ByteArrayOutputStream memory = input.equals(output) ? new ByteArrayOutputStream() : null;
             try (ZipOutputStream zout = new ZipOutputStream(memory == null ? new FileOutputStream(output) : memory);
                 ZipInputStream in = new ZipInputStream(new FileInputStream(input))) {
 
-                forEachZipEntry(in, (ein, zin) -> processors.stream()
-                        .filter(it -> it.validate(ein))
-                        .findFirst()
-                        .map(ZipEntryProcessor::getProcessor)
-                        .orElse(defaultProcessor)
-                        .process(ein, zin, zout));
+                process(processors, defaultProcessor, in, zout);
             }
 
             if (memory != null)
@@ -149,6 +147,19 @@ public class SrgMcpRenamer extends Task {
             parser.printHelpOn(System.out);
             e.printStackTrace();
         }
+    }
+
+    private void process(List<ZipEntryProcessor> processors, ZipWritingConsumer defaultProcessor, ZipInputStream in, ZipOutputStream zout) throws IOException {
+        forEachZipEntry(in, (ein, zin) -> {
+            for (ZipEntryProcessor processor : processors) {
+                if (processor.validate(ein)) {
+                    processor.getProcessor().process(ein, zin, zout);
+                    return;
+                }
+            }
+
+            defaultProcessor.process(ein, zin, zout);
+        });
     }
 
     private void forEachZipEntry(ZipInputStream zin, ZipConsumer entryConsumer) throws IOException {
@@ -195,6 +206,14 @@ public class SrgMcpRenamer extends Task {
         zout.putNextEntry(makeNewEntry(ein));
         mout.write(zout);
         log("Stripped Manifest of sha digests");
+    }
+
+    private void processNestedJar(List<ZipEntryProcessor> processors, ZipWritingConsumer defaultProcessor, ZipEntry ein, ZipInputStream in, ZipOutputStream zout) throws IOException {
+        zout.putNextEntry(makeNewEntry(ein));
+        ZipInputStream nestedIn = new ZipInputStream(in);
+        ZipOutputStream nestedOut = new ZipOutputStream(zout);
+        process(processors, defaultProcessor, nestedIn, nestedOut);
+        nestedOut.finish();
     }
 
     private boolean holdsSignatures(final ZipEntry ein) {

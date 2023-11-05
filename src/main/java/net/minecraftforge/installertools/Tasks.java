@@ -24,7 +24,6 @@ public enum Tasks {
     MCP_DATA(McpData::new),
     CREATE_DIR(CreateDirectory::new),
     CREATE_PARENTS(CreateParents::new),
-    DEOBF_REALMS(DeobfRealms::new),
     SRG_TO_MCP(SrgMcpRenamer::new),
     EXTRACT_INHERITANCE(ExtractInheritance::new),
     CHAIN_MAPPING(ChainMappings::new),

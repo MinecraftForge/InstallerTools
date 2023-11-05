@@ -18,9 +18,6 @@
  */
 package net.minecraftforge.installertools.util;
 
-import com.google.common.base.Splitter;
-import com.google.common.collect.Iterables;
-
 import java.io.File;
 import java.util.Locale;
 
@@ -42,7 +39,7 @@ public class Artifact {
         Artifact ret = new Artifact();
         ret.descriptor = descriptor;
 
-        String[] pts = Iterables.toArray(Splitter.on(':').split(descriptor), String.class);
+        String[] pts = descriptor.split(":");
         ret.group = pts[0];
         ret.name = pts[1];
 

@@ -1,97 +1,88 @@
+import net.minecraftforge.gradleutils.PomUtils
+
 plugins {
-  id 'java-library'
-  id 'maven-publish'
-  id 'eclipse'
-  id 'org.cadixdev.licenser' version '0.6.1'
-  id 'com.github.johnrengelman.shadow' version '7.1.2'
-  id 'com.github.ben-manes.versions' version '0.42.0'
-  id 'net.minecraftforge.gradleutils' version '2.+'
+    id 'java-library'
+    id 'maven-publish'
+    id 'eclipse'
+    id 'org.cadixdev.licenser' version '0.6.1'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.github.ben-manes.versions' version '0.49.0'
+    id 'net.minecraftforge.gradleutils' version '[2.1.2,)'
+    id 'net.minecraftforge.gradlejarsigner' version '1.0.4'
 }
 
 group = 'net.minecraftforge'
-
-version = gradleutils.getTagOffsetVersion()
-println('Version: ' + version)
-java.toolchain.languageVersion = JavaLanguageVersion.of(8)
+version = gradleutils.tagOffsetVersion
+println("Version: $version")
+jarSigner.autoDetect('forge')
 
 repositories {
     mavenCentral()
-    maven { url 'https://maven.minecraftforge.net/' }
+    maven gradleutils.forgeMaven
 }
 
 license {
-  header project.file('LICENSE-header.txt')
-  include 'net/minecraftforge/installertools/**/*.java'
+  header file('LICENSE-header.txt')
   newLine false
 }
 
-jar {
-    manifest.attributes('Main-Class': 'net.minecraftforge.installertools.ConsoleTool')
-    manifest.attributes('Implementation-Version': project.version)
-}
-shadowJar {
-    classifier 'fatjar'
-    manifest.attributes('Main-Class': 'net.minecraftforge.installertools.ConsoleTool')
-    manifest.attributes('Implementation-Version': project.version)
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(8)
+    withSourcesJar()
 }
 
-task sourcesJar(type: Jar) {
-    archiveClassifier = 'sources'
-    from sourceSets.main.allSource
+tasks.named('jar').configure {
+    manifest {
+        attributes([
+            'Main-Class': 'net.minecraftforge.installertools.ConsoleTool',
+            'Specification-Title':   'Installer Tools',
+            'Specification-Vendor':  'Forge Development LLC',
+            'Specification-Version':  gradleutils.gitInfo.tag,
+            'Implementation-Title':  "$project.group:$project.name",
+            'Implementation-Vendor': 'Forge Development LLC',
+            'Implementation-Version': project.version
+        ] as LinkedHashMap)
+    }
+    jarSigner.sign(it)
+}
+
+tasks.named('shadowJar').configure {
+    archiveClassifier = 'fatjar'
+    jarSigner.sign(it)
 }
 
 artifacts {
-    archives jar
     archives shadowJar
-    archives sourcesJar
 }
 
 dependencies {
-    implementation 'net.sf.jopt-simple:jopt-simple:5.0.4'
-    implementation 'com.google.code.gson:gson:2.8.7'
-    implementation 'net.md-5:SpecialSource:1.11.0'
-    implementation 'de.siegmar:fastcsv:2.0.0'
-    implementation 'net.minecraftforge:srgutils:0.4.11'
-    implementation 'org.ow2.asm:asm-commons:9.3'
+    implementation 'net.sf.jopt-simple:jopt-simple:6.0-alpha-3'
+    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'de.siegmar:fastcsv:2.2.2'
+    implementation 'net.minecraftforge:srgutils:0.5.6'
+    implementation 'org.ow2.asm:asm-commons:9.6'
 }
 
 publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-            artifact sourcesJar
+    publications.register('mavenJava', MavenPublication) {
+        from components.java
+        artifactId = 'installertools'
+        pom {
+            name = 'Installer Tools'
+            description = 'A collection of command line tools that are useful for the Forge installer, that are not worth being their own standalone projects.'
+            url = 'https://github.com/MinecraftForge/InstallerTools'
+            PomUtils.setGitHubDetails(pom, 'MergeTool')
 
-            pom {
-                name = 'Installer Tools'
-                description = 'A collection of command line tools that are useful for the Forge installer, that are not worth being their own standalone projects.'
-                url = 'https://github.com/MinecraftForge/InstallerTools'
-                scm {
-                    url = 'https://github.com/MinecraftForge/InstallerTools'
-                    connection = 'scm:git:git://github.com/MinecraftForge/InstallerTools.git'
-                    developerConnection = 'scm:git:git@github.com:MinecraftForge/InstallerTools.git'
-                }
-                issueManagement {
-                    system = 'github'
-                    url = 'https://github.com/MinecraftForge/InstallerTools/issues'
-                }
+            PomUtils.setGitHubDetails(pom, 'MergeTool')
 
-                licenses {
-                    license {
-                        name = 'LGPLv2.1'
-                        url = 'https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt'
-                    }
-                }
+            license PomUtils.Licenses.LGPLv2_1
 
-                developers {
-                    developer {
-                        id = 'LexManos'
-                        name = 'Lex Manos'
-                    }
-                }
+            developers {
+                developer PomUtils.Developers.LexManos
             }
         }
     }
     repositories {
-        maven gradleutils.getPublishingForgeMaven()
+        maven gradleutils.publishingForgeMaven
     }
 }

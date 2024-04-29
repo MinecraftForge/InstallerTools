@@ -71,9 +71,8 @@ publishing {
             name = 'Installer Tools'
             description = 'A collection of command line tools that are useful for the Forge installer, that are not worth being their own standalone projects.'
             url = 'https://github.com/MinecraftForge/InstallerTools'
-            PomUtils.setGitHubDetails(pom, 'MergeTool')
 
-            PomUtils.setGitHubDetails(pom, 'MergeTool')
+            PomUtils.setGitHubDetails(pom, 'InstallerTools')
 
             license PomUtils.Licenses.LGPLv2_1
 

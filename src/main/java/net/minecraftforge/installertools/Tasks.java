@@ -17,6 +17,7 @@ public enum Tasks {
     DOWNLOAD_MOJMAPS(DownloadMojmaps::new),
     EXTRACT_FILES(ExtractFiles::new),
     BUNDLER_EXTRACT(BundlerExtract::new),
+    MAPPINGS_CSV(MappingsCsv::new)
     ;
 
     private Supplier<? extends Task> supplier;

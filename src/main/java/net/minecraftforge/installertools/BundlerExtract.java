@@ -103,7 +103,7 @@ public class BundlerExtract extends Task {
                     for (FileList.Entry entry : versions.entries)
                         extractFile("versions", fs, entry, new File(output, "versions/" + entry.path));
                 } else {
-                    error("Must specify either --jar only, or --all");
+                    error("Must specify either --jar-only, --libraries, or --all");
                 }
             }
         } catch (OptionException e) {

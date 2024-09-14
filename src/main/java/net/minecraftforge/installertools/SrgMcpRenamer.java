@@ -164,10 +164,15 @@ public class SrgMcpRenamer extends Task {
     private void processClass(final ZipEntry ein, final ZipInputStream zin, final ZipOutputStream zout, final Remapper remapper) throws IOException {
         byte[] data = Utils.toByteArray(zin);
 
-        ClassReader reader = new ClassReader(data);
-        ClassWriter writer = new ClassWriter(0);
-        reader.accept(new ClassRemapper(writer, remapper), 0);
-        data = writer.toByteArray();
+        try {
+            ClassReader reader = new ClassReader(data);
+            ClassWriter writer = new ClassWriter(0);
+            reader.accept(new ClassRemapper(writer, remapper), 0);
+            data = writer.toByteArray();
+        }
+        catch(Throwable e) {
+            log(String.format("Could not process class: %s, skipping", e.getLocalizedMessage()));
+        }
 
         zout.putNextEntry(makeNewEntry(ein));
         zout.write(data);

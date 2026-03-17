@@ -94,7 +94,7 @@ public class DownloadMojmaps extends Task {
             }
         } catch (OptionException e) {
             parser.printHelpOn(System.out);
-            e.printStackTrace();
+            throw e;
         }
     }
 }

@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'eclipse'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.gradleup.shadow' version '9.0.2'
     id 'com.github.ben-manes.versions' version '0.51.0'
     id 'net.minecraftforge.licenser' version '1.0.1'
     id 'net.minecraftforge.gradleutils' version '[2.3,2.4)'
@@ -47,6 +47,18 @@ tasks.named('jar').configure {
 tasks.named('shadowJar').configure {
     archiveClassifier = 'fatjar'
     jarSigner.sign(it)
+
+    exclude '**/Log4j2Plugins.dat'
+
+    enableAutoRelocation = true
+    relocationPrefix = 'net.minecraftforge.installertools.shadow'
+    // Rewrite JOpt's message files, so that help text is displayed nicely.
+    transform(com.github.jengelman.gradle.plugins.shadow.transformers.PropertiesFileTransformer) {
+        paths = [ 'Messages.properties$' ]
+        keyTransformer = { key -> 'net.minecraftforge.installertools.shadow.' + key }
+    }
+    transform(com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer)
+    transform(com.github.jengelman.gradle.plugins.shadow.transformers.ServiceFileTransformer)
 }
 
 artifacts {
@@ -57,8 +69,8 @@ dependencies {
     implementation 'net.sf.jopt-simple:jopt-simple:6.0-alpha-3'
     implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'de.siegmar:fastcsv:2.2.2'
-    implementation 'net.minecraftforge:srgutils:0.5.10'
-    implementation 'org.ow2.asm:asm-commons:9.7'
+    implementation 'net.minecraftforge:srgutils:0.6.2'
+    implementation 'org.ow2.asm:asm-commons:9.9.1'
 }
 
 publishing {
